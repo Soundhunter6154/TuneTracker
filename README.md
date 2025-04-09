@@ -52,7 +52,7 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
     ```bash
     python -m venv venv
 
-    After creation, you will also need to activate the Virtual Environment
+3. **After creation, you will also need to activate the Virtual Environment:**
 
     For Linux/Mac:
     ```bash
@@ -62,11 +62,11 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
     ```bash
     venv\Scripts\activate           
 
-3. **Installing Dependencies:**
+4. **Installing Dependencies:**
     ```bash
     pip install -r requirements.txt
 
-4. **Running the application:**
+5. **Running the application:**
     ```bash
     python main.py
 
