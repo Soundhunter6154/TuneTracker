@@ -56,11 +56,11 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 
     For Linux/Mac:
     ```bash
-    source venv/bin/activate         
+    source venv/bin/activate     ```    
     
     For Windows:
     ```bash
-    venv\Scripts\activate           
+    venv\Scripts\activate           ```
 
 4. **Installing Dependencies:**
     ```bash
@@ -109,7 +109,7 @@ Coming soon!
 
 ## Development Guidelines
 
-**Modular Design:*
+**Modular Design:**
 The code is split into several files for audio processing, database handling, background workers, and GUI components. This modular structure improves maintainability.
 
 **Multithreading:**
