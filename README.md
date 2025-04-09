@@ -45,14 +45,22 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 1. **Clone the Repository:**
 
    ```bash
-   git clone https://github.com/yourusername/TuneTracker.git
-   cd TuneTracker```
+   git clone https://github.com/Soundhunter6154/TuneTracker
 
 2. **Create a Virtual Environment:**
+
     ```bash
     python -m venv venv
-    source venv/bin/activate         # For Linux/macOS
-    venv\Scripts\activate            # For Windows```
+
+    After creation, you'll also need to activate the Virtual Environment...
+
+    For Linux/Mac:
+    ```bash
+    source venv/bin/activate         
+    
+    For Windows:
+    ```bash
+    venv\Scripts\activate           
 
 3. **Installing Dependencies:**
     ```bash
@@ -65,7 +73,7 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 
 ---
 
-Usage
+##Usage
 
 Once the application is launched, you have several tabs to work with:
 
@@ -88,36 +96,35 @@ View a history of your past song comparisons (including query file, best match, 
 Visualize the spectrogram of the query file with overlaid peaks and fingerprint match highlights (green dots indicate matched peaks).
 
 
-
 ---
 
-Code Structure
+##Code Structure
 
 A sample project structure is:
 
 Coming soon!
 
+
 ---
 
-Development Guidelines
+##Development Guidelines
 
-Modular Design:
+**Modular Design:*
 The code is split into several files for audio processing, database handling, background workers, and GUI components. This modular structure improves maintainability.
 
-Multithreading:
+**Multithreading:**
 Long-running operations (e.g., comparing songs or batch processing) run in separate QThread workers to keep the UI responsive. Each worker provides cancellation support.
 
-Configuration:
+**Configuration:**
 Global parameters (sampling rate, loudness gate, fan value) are stored in config.py and can be adjusted via the Preferences tab, triggering a re-hash of existing data if needed.
 
-Contributing:
+**Contributing:**
 Contributions are welcome! Please follow PEP8 guidelines, write descriptive commit messages, and open pull requests for review.
 
 
-
 ---
 
-Future Enhancements
+##Future Enhancements
 
 Implement a more robust recording capability (real-time, cancelable recording).
 
@@ -130,24 +137,23 @@ Implement enhanced visualization features, such as detailed heatmaps or dynamic 
 Enhance error handling and logging throughout the application.
 
 
-
 ---
 
-License
+##License
 
 This project is licensed under the GPL V3 License.
 
 
 ---
 
-Credits
+##Credits
 
 TuneTracker was developed by 'some people' for their college project. It is inspired by SeekTune and aims to provide coding understanding for such projects in Python. Nothing more, really.
 
 
 ---
 
-Contributing
+##Contributing
 
 1. Fork the repository.
 
@@ -167,5 +173,5 @@ For any questions or suggestions, please open an issue.
 
 ---
 
-Happy coding!
+###Happy coding!
 
