@@ -52,7 +52,7 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
     ```bash
     python -m venv venv
 
-    After creation, you'll also need to activate the Virtual Environment...
+    After creation, you will also need to activate the Virtual Environment
 
     For Linux/Mac:
     ```bash
@@ -73,7 +73,7 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 
 ---
 
-##Usage
+## Usage
 
 Once the application is launched, you have several tabs to work with:
 
@@ -98,7 +98,7 @@ Visualize the spectrogram of the query file with overlaid peaks and fingerprint 
 
 ---
 
-##Code Structure
+## Code Structure
 
 A sample project structure is:
 
@@ -107,7 +107,7 @@ Coming soon!
 
 ---
 
-##Development Guidelines
+## Development Guidelines
 
 **Modular Design:*
 The code is split into several files for audio processing, database handling, background workers, and GUI components. This modular structure improves maintainability.
@@ -124,7 +124,7 @@ Contributions are welcome! Please follow PEP8 guidelines, write descriptive comm
 
 ---
 
-##Future Enhancements
+## Future Enhancements
 
 Implement a more robust recording capability (real-time, cancelable recording).
 
@@ -139,21 +139,21 @@ Enhance error handling and logging throughout the application.
 
 ---
 
-##License
+## License
 
 This project is licensed under the GPL V3 License.
 
 
 ---
 
-##Credits
+## Credits
 
 TuneTracker was developed by 'some people' for their college project. It is inspired by SeekTune and aims to provide coding understanding for such projects in Python. Nothing more, really.
 
 
 ---
 
-##Contributing
+## Contributing
 
 1. Fork the repository.
 
@@ -173,5 +173,5 @@ For any questions or suggestions, please open an issue.
 
 ---
 
-###Happy coding!
+### Happy coding!
 
