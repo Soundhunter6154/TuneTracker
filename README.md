@@ -54,11 +54,11 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 
 3. **After creation, you will also need to activate the Virtual Environment:**
 
-    For Linux/Mac:
+For Linux/Mac:
     ```bash
     source venv/bin/activate     ```    
     
-    For Windows:
+For Windows:
     ```bash
     venv\Scripts\activate           ```
 
