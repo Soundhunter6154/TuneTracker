@@ -107,15 +107,16 @@ Visualize the spectrogram of the query file with overlaid peaks and fingerprint 
 
 A sample project structure is:
 
-TuneTracker
-|---venv                              #Virtual Environment
-|---audio_processing.py               #Inputs Audio, Outputs Hashes
-|---config.py                         #Settings (Configurable from inside the app)
-|---database.py                       #Generates fingerrints.db
-|---fingerprints.db                   #Stores the hashes, and history
-|---gui.py                            #Frontend of the app
-|---main.py                           #Main entrypoint of the app
-|---recordskelly.py                   #A utility to quickly splice audio files in batch for testing
+TuneTracker/
+├── venv/                     # Virtual Environment
+├── audio_processing.py       # Inputs Audio, Outputs Hashes
+├── config.py                 # Settings (Configurable from inside the app)
+├── database.py               # Generates fingerprints.db
+├── fingerprints.db           # Stores the hashes, and history
+├── gui.py                    # Frontend of the app
+├── main.py                   # Main entrypoint of the app
+├── recordskelly.py           # Utility to quickly splice audio files in batch for testing
+
 
 
 ---
