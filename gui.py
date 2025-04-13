@@ -1,11 +1,21 @@
+import sqlite3
+import numpy as np
+import librosa
+import librosa.display
+import xxhash
+from matplotlib.figure import Figure
+
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from config import PREFERENCES  # Assuming global preferences are moved to config.py
+from database import DB_FILE
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QLineEdit, QFileDialog, QProgressBar,
-    QTabWidget, QMessageBox, QSlider
+    QTabWidget, QMessageBox, QSlider, QListWidget
 )
-from workers import QueryWorker, BatchWorker, RecordWorker
-from config import PREFERENCES
+from workers import QueryWorker, BatchWorker
 
 # Compare Tab: Allows a user to select a query file, compare it, and view results
 class CompareTab(QWidget):
@@ -80,12 +90,16 @@ class CompareTab(QWidget):
         elif best == "Cancelled":
             self.resultLabel.setText("Comparison cancelled.")
         else:
+            # Save history only if there is a valid best match.
+            from database import add_history
+            add_history(self.queryLineEdit.text(), best[0], best[1])
             text = f"<b>Best Match:</b> {best[0]} ({best[1]} matches)<br><br>"
             if similar:
                 text += "<b>Similar Songs:</b><br>"
                 for song, count in similar:
                     text += f"{song} ({count} matches)<br>"
             self.resultLabel.setText(text)
+
 
 # Batch Tab: Allows batch addition of MP3 files into the database
 class BatchTab(QWidget):
@@ -183,6 +197,10 @@ class PreferencesTab(QWidget):
         self.saveBtn.clicked.connect(self.savePreferences)
         layout.addWidget(self.saveBtn)
 
+        self.clearHistoryBtn = QPushButton("Clear History", self)
+        self.clearHistoryBtn.clicked.connect(self.clearHistory)
+        layout.addWidget(self.clearHistoryBtn)
+
         self.hashProgressBar = QProgressBar(self)
         layout.addWidget(self.hashProgressBar)
         self.hashStatusLabel = QLabel("Re-hash status will appear here.", self)
@@ -197,6 +215,11 @@ class PreferencesTab(QWidget):
 
     def updateFVLabel(self, value):
         self.fvLabel.setText(f"Fan Value: {value}")
+
+    def clearHistory(self):
+        from database import clear_history
+        clear_history()
+        QMessageBox.information(self, "History Cleared", "Query history has been cleared.")
 
     def savePreferences(self):
         from database import clear_database
@@ -251,102 +274,182 @@ class DatabaseTab(QWidget):
             clear_database()
             QMessageBox.information(self, "Database Cleared", "All data has been erased.")
 
-#RecordTab tab to record audio via microphone
 
-class RecordTab(QWidget):
+class HistoryTab(QWidget):
     def __init__(self):
         super().__init__()
-        self.worker = None
-        self.recorded_file = None
         self.initUI()
 
     def initUI(self):
         layout = QVBoxLayout()
+        self.historyList = QListWidget(self)
+        layout.addWidget(self.historyList)
 
-        # Status label to display recording status
-        self.statusLabel = QLabel("Status: Not recording", self)
-        layout.addWidget(self.statusLabel)
-
-        # Buttons to control recording
         btn_layout = QHBoxLayout()
-        self.startBtn = QPushButton("Start Recording", self)
-        self.startBtn.clicked.connect(self.startRecording)
-        btn_layout.addWidget(self.startBtn)
-        self.stopBtn = QPushButton("Stop Recording", self)
-        self.stopBtn.clicked.connect(self.stopRecording)
-        btn_layout.addWidget(self.stopBtn)
+        self.refreshBtn = QPushButton("Refresh", self)
+        self.refreshBtn.clicked.connect(self.loadHistory)
+        btn_layout.addWidget(self.refreshBtn)
+        self.clearBtn = QPushButton("Clear History", self)
+        self.clearBtn.clicked.connect(self.clearHistory)
+        btn_layout.addWidget(self.clearBtn)
         layout.addLayout(btn_layout)
 
-        # Button to process the recorded file through the pipeline
-        self.processBtn = QPushButton("Process Recording", self)
-        self.processBtn.clicked.connect(self.processRecording)
-        layout.addWidget(self.processBtn)
+        self.setLayout(layout)
+        self.loadHistory()
 
+    def loadHistory(self):
+        from database import get_history
+        history = get_history()
+        self.historyList.clear()
+        for record in history:
+            query_file, best_match, match_count, timestamp = record
+            self.historyList.addItem(f"{timestamp}: {query_file} => {best_match} ({match_count} matches)")
+
+    def clearHistory(self):
+        from database import clear_history
+        clear_history()
+        self.loadHistory()
+
+
+
+
+# gui.py (add this new VisualsTab class)
+
+def generate_hashes_with_coords(peaks, fan_value=None):
+    """
+    Generate hashes from peaks, returning a list of tuples: (hash, time, freq).
+    Here, each hash is generated from a peak and one of the subsequent peaks.
+    """
+    if fan_value is None:
+        fan_value = PREFERENCES["fan_value"]
+    results = []
+    for i in range(len(peaks)):
+        freq1, time1 = peaks[i]
+        for j in range(1, fan_value):
+            if i + j < len(peaks):
+                freq2, time2 = peaks[i + j]
+                hash_str = f"{freq1}|{freq2}|{time2 - time1}"
+                hash_val = xxhash.xxh64(hash_str.encode()).hexdigest()[:10]
+                results.append((hash_val, time1, freq1))
+    return results
+
+def get_matched_hashes(query_hashes):
+    """
+    Given query_hashes as a list of (hash, time, freq) tuples,
+    return a set of hash values that are found in the database.
+    """
+    matched = set()
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    unique_hashes = list(set(h for h, t, f in query_hashes))
+    if not unique_hashes:
+        return matched
+    placeholders = ','.join('?' for _ in unique_hashes)
+    query = f"SELECT DISTINCT hash FROM fingerprints WHERE hash IN ({placeholders})"
+    cursor.execute(query, unique_hashes)
+    rows = cursor.fetchall()
+    for row in rows:
+        matched.add(row[0])
+    conn.close()
+    return matched
+
+class VisualsTab(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.query_file = None
+        self.figure = Figure(figsize=(5, 4))
+        self.canvas = FigureCanvas(self.figure)
+        self.initUI()
+
+    def initUI(self):
+        layout = QVBoxLayout()
+        self.loadBtn = QPushButton("Load Query File", self)
+        self.loadBtn.clicked.connect(self.loadQueryFile)
+        layout.addWidget(self.loadBtn)
+
+        self.plotBtn = QPushButton("Process and Visualize", self)
+        self.plotBtn.clicked.connect(self.processAndVisualize)
+        layout.addWidget(self.plotBtn)
+
+        self.statusLabel = QLabel("Status: No file loaded.", self)
+        layout.addWidget(self.statusLabel)
+
+        layout.addWidget(self.canvas)
         self.setLayout(layout)
 
-    def startRecording(self):
-        self.statusLabel.setText("Recording...")
-        self.worker = RecordWorker()
-        self.worker.result.connect(self.recordingFinished)
-        self.worker.error.connect(self.recordingError)
-        self.worker.start()
+    def loadQueryFile(self):
+        file, _ = QFileDialog.getOpenFileName(self, "Select Query Audio", "", "Audio Files (*.wav *.mp3)")
+        if file:
+            self.query_file = file
+            self.statusLabel.setText(f"Loaded file: {file}")
 
-    def stopRecording(self):
-        if self.worker:
-            self.worker.stop()
-            self.statusLabel.setText("Stopping recording...")
-
-    def recordingFinished(self, file_path):
-        self.recorded_file = file_path
-        self.statusLabel.setText(f"Recording saved: {file_path}")
-
-    def recordingError(self, error_str):
-        self.statusLabel.setText(f"Error: {error_str}")
-
-    def processRecording(self):
-        if not self.recorded_file:
-            self.statusLabel.setText("No recorded file to process.")
+    def processAndVisualize(self):
+        if not self.query_file:
+            self.statusLabel.setText("No query file loaded.")
             return
-        # Create a QueryWorker to process the recorded file through the existing pipeline
-        self.statusLabel.setText("Processing recording...")
-        self.queryWorker = QueryWorker(self.recorded_file)
-        self.queryWorker.progress.connect(lambda current, total, remaining:
-                                          self.statusLabel.setText(f"Processing: {current}/{total}, {int(remaining)} sec left"))
-        self.queryWorker.result.connect(self.processingResult)
-        self.queryWorker.start()
 
-    def processingResult(self, result):
-        best, similar = result
-        if best is None:
-            self.statusLabel.setText("No match found for the recording.")
-        elif isinstance(best, str) and best.startswith("Error:"):
-            self.statusLabel.setText(best)
-        elif best == "Cancelled":
-            self.statusLabel.setText("Processing cancelled.")
-        else:
-            text = f"Best Match: {best[0]} ({best[1]} matches)."
-            if similar:
-                text += "\nSimilar Songs:\n"
-                for song, count in similar:
-                    text += f"{song} ({count} matches)\n"
-            self.statusLabel.setText(text)
+        # Process the query file: load audio, compute spectrogram, detect peaks.
+        audio, sr = librosa.load(self.query_file, sr=PREFERENCES["sampling_rate"])
+        spectrogram = librosa.amplitude_to_db(np.abs(librosa.stft(audio)))
+        peaks = self.get_peaks(spectrogram, threshold=PREFERENCES["loudness_gate"])
+        # Get hashes including coordinates:
+        query_hashes = generate_hashes_with_coords(peaks, fan_value=PREFERENCES["fan_value"])
+        matched_set = get_matched_hashes(query_hashes)
+
+        # Prepare the figure
+        self.figure.clf()
+        ax = self.figure.add_subplot(111)
+        # Show the spectrogram
+        librosa.display.specshow(spectrogram, sr=sr, x_axis='time', y_axis='log', ax=ax, cmap='viridis')
+        ax.set_title("Query Spectrogram with Peak Matches")
+        # Overlay all detected peaks as small black dots
+        if len(peaks) > 0:
+            # peaks: each row is (freq_index, time_index)
+            ax.plot(peaks[:,1], peaks[:,0], 'ko', markersize=2)
+        # Overlay matched peaks in green.
+        # For each tuple in query_hashes (hash, time, freq), if hash is in matched_set, plot in green.
+        for h, t, f in query_hashes:
+            if h in matched_set:
+                ax.plot(t, f, 'go', markersize=4)
+        self.canvas.draw()
+        self.statusLabel.setText(f"Plotted {len(peaks)} peaks; {len(matched_set)} hashes matched.")
+
+    def get_peaks(self, spectrogram, threshold):
+        """
+        A helper version of get_peaks that replicates functionality from backend but is local
+        for visualization.
+        """
+        from scipy.ndimage import maximum_filter
+        max_filt = maximum_filter(spectrogram, size=(10,10))
+        peaks_bool = (spectrogram == max_filt) & (spectrogram > np.percentile(spectrogram, threshold))
+        peak_coords = np.column_stack(np.where(peaks_bool))
+        return peak_coords
+
+
+
+
 
 # MainWindow: Organizes all tabs into the main application window
+
+
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("TuneTracker")
+        self.setWindowTitle("SeekTune Desktop App")
         self.resize(700, 500)
         self.tabWidget = QTabWidget()
         self.compareTab = CompareTab()
         self.batchTab = BatchTab()
         self.preferencesTab = PreferencesTab()
         self.databaseTab = DatabaseTab()
-        self.recordTab = RecordTab()
+        self.historyTab = HistoryTab()
+        self.visualsTab = VisualsTab()
         self.tabWidget.addTab(self.compareTab, "Compare Song")
         self.tabWidget.addTab(self.batchTab, "Batch Add Songs")
         self.tabWidget.addTab(self.preferencesTab, "Preferences")
         self.tabWidget.addTab(self.databaseTab, "Database Management")
-        self.tabWidget.addTab(self.recordTab, "Record")
+        self.tabWidget.addTab(self.historyTab, "History")
+        self.tabWidget.addTab(self.visualsTab, "Visuals")
         self.setCentralWidget(self.tabWidget)

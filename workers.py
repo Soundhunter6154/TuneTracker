@@ -7,9 +7,6 @@ from PyQt6.QtCore import QThread, pyqtSignal
 from database import DB_FILE
 from audio_processing import load_audio, compute_spectrogram, get_peaks, generate_hashes
 
-import soundcard as sc
-import soundfile as sf
-
 class QueryWorker(QThread):
     progress = pyqtSignal(int, int, float)  # current_count, total, estimated_remaining_sec
     result = pyqtSignal(object)             # (best_match, similar_songs)
@@ -112,57 +109,3 @@ class BatchWorker(QThread):
             self.finished_signal.emit(f"Added {total} songs successfully.")
         except Exception as e:
             self.finished_signal.emit("Error: " + str(e))
-
-# workers.py (RecordWorker section)
-
-class RecordWorker(QThread):
-    # Emits the output file path or status message once recording finishes,
-    # or an error message if something goes wrong.
-    result = pyqtSignal(str)
-    error = pyqtSignal(str)
-
-    def __init__(self, duration=5, parent=None):
-        """
-        Initialize the RecordWorker.
-
-        :param duration: Recording duration in seconds.
-        :param parent: Parent widget.
-        """
-        super().__init__(parent)
-        self.duration = duration  # Duration to record (in seconds)
-        self.samplerate = 22050   # Default sampling rate; could also be imported from config
-        self._is_recording = False
-        self.selected_mic = None
-
-    def run(self):
-        try:
-            # List available microphones (you could extend this to let the user choose)
-            mics = sc.all_microphones(include_loopback=False)
-            if not mics:
-                self.error.emit("No microphone found.")
-                return
-
-            # Use the first available microphone as the default.
-            self.selected_mic = mics[0]
-            self.result.emit(f"Recording started using microphone: {self.selected_mic.name}")
-            self._is_recording = True
-
-            # Record audio for the specified duration.
-            # Note: This call is blocking, so cancellation during recording isn't supported.
-            data = self.selected_mic.record(samplerate=self.samplerate, numframes=int(self.duration * self.samplerate))
-
-            # Save the recorded data to a WAV file.
-            output_file = "recorded.wav"
-            sf.write(output_file, data, self.samplerate)
-
-            # Emit the output file path so it can be processed by the existing pipeline.
-            self.result.emit(output_file)
-        except Exception as e:
-            self.error.emit(str(e))
-
-    def stop(self):
-        """
-        Attempt to stop recording.
-        Note: Due to the blocking nature of the soundcard.record() call, cancellation may not work as expected.
-        """
-        self._is_recording = False
