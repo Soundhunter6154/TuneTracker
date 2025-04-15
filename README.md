@@ -8,7 +8,7 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 ## Features
 
 - **Audio Fingerprinting:**  
-  Extracts robust fingerprints from audio files via spectrogram analysis and peak detection. A fast, non-cryptographic hash (xxHash) is computed for each pair of spectral peaks.
+  Extracts fingerprints from audio files via spectrogram analysis and peak detection. A fast, non-cryptographic hash (xxHash) is computed for each pair of spectral peaks.
 
 - **Song Comparison:**  
   Compare a query audio clip against a local database to retrieve the best matching song along with similar candidates, based on the number of matching fingerprint hashes.
@@ -18,9 +18,6 @@ TuneTracker is an open-source, offline audio recognition desktop application bui
 
 - **History Tracking:**  
   Maintain a history of query comparisons, viewable in a dedicated History tab and manageable via the Preferences or Database Management sections.
-
-- **Visualizations:**  
-  Visualize the spectrogram of the query audio with overlaid peaks and fingerprint match indicators, helping you see what's happening under the hood.
 
 - **Configurable Preferences:**  
   Adjust key parameters such as sampling rate, loudness gate threshold, and fan value (the number of peak pairings) via a dedicated Preferences tab. Changing preferences can trigger a complete re-hash of the database.
@@ -98,7 +95,7 @@ Directly clear the database if needed.
 View a history of your past song comparisons (including query file, best match, match count, and timestamp).
 
 **Visuals:**
-Visualize the spectrogram of the query file with overlaid peaks and fingerprint match highlights (green dots indicate matched peaks).
+Visualize the spectrogram of the query file with overlaid peaks and fingerprint match highlights (green dots indicate matched peaks). Not working very well currently.
 
 
 ---
@@ -118,38 +115,36 @@ TuneTracker/
 ├── main.py               # Main entrypoint of the app
 ├── recordskelly.py       # Utility to quickly splice audio files in batch for testing
 ```
-
-
-
-
 ---
 
 ## Development Guidelines
 
 **Modular Design:**
-The code is split into several files for audio processing, database handling, background workers, and GUI components. This modular structure improves maintainability.
+The code is split into several files for audio processing, database handling, background workers, and GUI components. 
 
 **Multithreading:**
-Long-running operations (e.g., comparing songs or batch processing) run in separate QThread workers to keep the UI responsive. Each worker provides cancellation support.
+Long-running operations (e.g., comparing songs or batch processing) run in separate QThread workers to keep the UI responsive.
 
 **Configuration:**
-Global parameters (sampling rate, loudness gate, fan value) are stored in config.py and can be adjusted via the Preferences tab, triggering a re-hash of existing data if needed.
+Global parameters (sampling rate, loudness gate, fan value) are stored in config.py and can be adjusted via the Preferences tab, triggering a re-hash of existing data.
 
 **Contributing:**
-Contributions are welcome! Please follow PEP8 guidelines, write descriptive commit messages, and open pull requests for review.
+Not really planning on active maintainence yet. You may fork the Repo and do your own development on it. 
 
 
 ---
 
 ## Future Enhancements
 
+As I said, not planning on maintenance, but if I had to implement features, I'd look at the list below:
+
 Implement a more robust recording capability (real-time, cancelable recording).
 
-Improve fingerprint matching with advanced features (e.g., temporal alignment).
+Improve fingerprint matching with advanced features (temporal alignment).
 
 Add export/import functionality for the database.
 
-Implement enhanced visualization features, such as detailed heatmaps or dynamic overlays.
+Implement enhanced visualization features, such as detailed heatmaps or dynamic overlays. But before that, fix the existing one!
 
 Enhance error handling and logging throughout the application.
 
@@ -165,27 +160,6 @@ This project is licensed under the GPL-3 License.
 ## Credits
 
 TuneTracker was developed by 'some people' for their college project. It is inspired by SeekTune and aims to provide coding understanding for such projects in Python. Nothing more, really.
-
-
----
-
-## Contributing
-
-1. Fork the repository.
-
-
-2. Create your feature branch.
-
-
-3. Commit your changes and push your branch.
-
-
-4. Open a pull request detailing your modifications.
-
-
-
-For any questions or suggestions, please open an issue.
-
 
 ---
 
